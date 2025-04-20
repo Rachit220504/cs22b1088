@@ -7,6 +7,7 @@ function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [useMock, setUseMock] = useState(false);
 
   const numberOptions = [
     { id: 'p', name: 'Prime Numbers' },
@@ -20,7 +21,8 @@ function App() {
     setError(null);
     
     try {
-      const response = await axios.get(`http://localhost:8000/numbers/${selectedOption}`);
+      const url = `http://localhost:8000/numbers/${selectedOption}${useMock ? '?use_mock=true' : ''}`;
+      const response = await axios.get(url);
       setResult(response.data);
     } catch (err) {
       setError(err.response ? err.response.data.detail : 'Failed to fetch data');
@@ -50,6 +52,17 @@ function App() {
                 </option>
               ))}
             </select>
+          </div>
+          
+          <div className="mock-data-toggle">
+            <label>
+              <input
+                type="checkbox"
+                checked={useMock}
+                onChange={() => setUseMock(!useMock)}
+              />
+              Use Mock Data
+            </label>
           </div>
           
           <button 

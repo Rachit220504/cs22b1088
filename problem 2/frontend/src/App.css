@@ -104,3 +104,20 @@ select {
   border-radius: 4px;
   border: 1px solid #ffcccc;
 }
+
+.mock-data-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mock-data-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.mock-data-toggle input[type="checkbox"] {
+  cursor: pointer;
+}

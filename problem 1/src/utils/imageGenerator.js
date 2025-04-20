@@ -15,16 +15,17 @@ export const generateUserAvatar = (userId, size = 100) => {
   return `https://ui-avatars.com/api/?name=${initials}&background=${backgroundColor}&color=fff&size=${size}`
 }
 
-// Generate a random image for a post based on post ID and content
+// Generate a reliable image for posts based on post ID
 export const generatePostImage = (postId, content, width = 800, height = 600) => {
-  // Extract a keyword from the content if possible
+  // Extract a seed from the content if possible
   const contentWords = content?.split(' ') || []
   const keywordCandidates = contentWords.filter(word => word.length > 3)
   const keyword = keywordCandidates.length > 0 
     ? keywordCandidates[postId % keywordCandidates.length] 
     : 'abstract'
   
-  return `https://source.unsplash.com/random/${width}x${height}/?${keyword}`
+  // Use PlaceIMG instead of Unsplash - more reliable and no CORS issues
+  return `https://picsum.photos/seed/${postId}-${keyword}/${width}/${height}`
 }
 
 // Format time as "X time ago"

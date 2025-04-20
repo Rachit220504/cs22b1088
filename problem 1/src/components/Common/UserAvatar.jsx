@@ -1,8 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { generateUserAvatar } from '../../utils/imageGenerator'
 
 function UserAvatar({ user, size = 'md', showName = false }) {
   const [hasError, setHasError] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState('')
+  
+  useEffect(() => {
+    // Reset error state when user changes
+    setHasError(false)
+    
+    // Generate avatar URL
+    setAvatarUrl(generateUserAvatar(user.id, size === 'xl' ? 200 : 100))
+  }, [user.id, size])
   
   const sizeClasses = {
     sm: 'h-8 w-8',
@@ -18,7 +27,11 @@ function UserAvatar({ user, size = 'md', showName = false }) {
     xl: 'text-lg',
   }
   
-  const avatarUrl = generateUserAvatar(user.id, size === 'xl' ? 200 : 100)
+  const handleError = () => {
+    console.log("Avatar failed to load, using fallback for user:", user.id)
+    setHasError(true)
+    // The avatar is already a generated one, so we don't need to regenerate it
+  }
   
   return (
     <div className="flex items-center">
@@ -26,7 +39,7 @@ function UserAvatar({ user, size = 'md', showName = false }) {
         src={avatarUrl}
         alt={`${user.name}'s avatar`}
         className={`${sizeClasses[size]} rounded-full object-cover bg-primary-100`}
-        onError={() => setHasError(true)}
+        onError={handleError}
       />
       {showName && (
         <div className="ml-3">

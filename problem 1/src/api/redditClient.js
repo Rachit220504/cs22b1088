@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Creating a Reddit API client with CORS proxy
 const redditClient = axios.create({
-  // Use a CORS proxy to access Reddit API from the browser
+  // Use a more reliable CORS proxy
   baseURL: 'https://corsproxy.io/?https://www.reddit.com',
   timeout: 15000,
   headers: {
@@ -11,21 +11,78 @@ const redditClient = axios.create({
   }
 });
 
-// Add response interceptor to handle errors
-redditClient.interceptors.response.use(
-  (response) => response,
+// Add request interceptor to log requests
+redditClient.interceptors.request.use(
+  (config) => {
+    console.log('Making request to:', config.url);
+    return config;
+  },
   (error) => {
-    console.error('Reddit API Error:', error);
+    console.error('Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Improved response interceptor with better error handling
+redditClient.interceptors.response.use(
+  (response) => {
+    console.log('Received response from Reddit API', response.config.url);
+    
+    // Add image URLs to posts for better display
+    if (response.data && response.data.data && response.data.data.children) {
+      response.data.data.children = response.data.data.children.map(child => {
+        if (child.data) {
+          // Extract image URL from various Reddit post types
+          let imageUrl = null;
+          
+          // Check for direct image links
+          if (child.data.url && /\.(jpg|jpeg|png|gif)$/i.test(child.data.url)) {
+            imageUrl = child.data.url;
+          }
+          // Check for thumbnail
+          else if (child.data.thumbnail && child.data.thumbnail !== 'self' && child.data.thumbnail !== 'default') {
+            imageUrl = child.data.thumbnail;
+          }
+          // Check for image previews
+          else if (child.data.preview && child.data.preview.images && child.data.preview.images[0]) {
+            const preview = child.data.preview.images[0];
+            imageUrl = preview.source.url.replace(/&amp;/g, '&');
+          }
+          
+          child.data.imageUrl = imageUrl;
+          
+          // Add content field for compatibility with our app
+          child.data.content = child.data.selftext || child.data.title;
+        }
+        return child;
+      });
+    }
+    
+    return response;
+  },
+  (error) => {
+    console.error('Reddit API Error:', error.message);
+    console.log('Failed URL:', error.config?.url);
+    
+    // Log more details about the error
+    if (error.response) {
+      console.log('Response status:', error.response.status);
+      console.log('Response headers:', error.response.headers);
+      console.log('Response data:', error.response.data);
+    }
+    
     // Instead of failing completely, return a resolved promise with mockData
-    // This allows the app to continue functioning with mock data on API failure
+    console.log('Falling back to mock data');
     return Promise.resolve({ 
-      data: getMockDataForEndpoint(error.config.url)
+      data: getMockDataForEndpoint(error.config?.url || '')
     });
   }
 );
 
-// Mock data generator based on the endpoint being called
+// Enhanced mock data generator based on the endpoint being called
 function getMockDataForEndpoint(url) {
+  console.log('Generating mock data for:', url);
+  
   if (url.includes('subreddits/popular')) {
     return mockSubreddits();
   } else if (url.includes('/hot.json') || url.includes('/r/popular.json')) {
@@ -54,7 +111,7 @@ function mockSubreddits() {
   };
 }
 
-// Mock posts data
+// Improved mock posts data with image URLs
 function mockPosts() {
   return {
     data: {
@@ -63,12 +120,15 @@ function mockPosts() {
           id: `post${i+1}`,
           title: `Mock Post ${i+1}`,
           selftext: `This is mock content for post ${i+1}. This simulates what would normally come from the Reddit API.`,
+          content: `This is mock content for post ${i+1}. This simulates what would normally come from the Reddit API.`,
           subreddit: `Subreddit${(i % 5) + 1}`,
           subreddit_id: `t5_${100000 + (i % 5)}`,
           subreddit_name_prefixed: `r/Subreddit${(i % 5) + 1}`,
           ups: Math.floor(Math.random() * 10000),
           num_comments: Math.floor(Math.random() * 500),
-          created_utc: (Date.now() / 1000) - (i * 3600)
+          created_utc: (Date.now() / 1000) - (i * 3600),
+          // Add image URL for each post using Picsum Photos with consistent seed
+          imageUrl: `https://picsum.photos/seed/mockpost${i+1}/800/600`
         }
       }))
     }

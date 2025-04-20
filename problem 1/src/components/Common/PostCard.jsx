@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FiMessageSquare, FiShare2, FiHeart } from 'react-icons/fi'
 import UserAvatar from './UserAvatar'
 import { generatePostImage, timeAgo, randomEngagement } from '../../utils/imageGenerator'
@@ -7,10 +7,39 @@ function PostCard({ post, user, showComments = false, isExpanded = false }) {
   const [liked, setLiked] = useState(false)
   const [likes, setLikes] = useState(() => randomEngagement(5, 200))
   const [shares, setShares] = useState(() => randomEngagement(1, 50))
+  const [imageLoaded, setImageLoaded] = useState(false)
+
+  // Always generate a fallback image
+  const fallbackImage = generatePostImage(post.id, post.content || post.title || '')
+  
+  // Determine the best image source
+  const getImageSource = () => {
+    // If the post has a direct image URL that's usable, use it
+    if (post.imageUrl && !post.imageUrl.includes("&amp;")) {
+      return post.imageUrl;
+    }
+    
+    // If the post has an image URL with HTML entities, decode it
+    if (post.imageUrl && post.imageUrl.includes("&amp;")) {
+      return post.imageUrl.replace(/&amp;/g, '&');
+    }
+    
+    // Otherwise use our fallback generated image
+    return fallbackImage;
+  }
   
   const handleLike = () => {
     setLiked(!liked)
     setLikes(prev => liked ? prev - 1 : prev + 1)
+  }
+  
+  const handleImageError = () => {
+    console.log("Image failed to load, using fallback for post:", post.id)
+    setImageLoaded(false)
+  }
+  
+  const handleImageLoad = () => {
+    setImageLoaded(true)
   }
   
   return (
@@ -20,16 +49,30 @@ function PostCard({ post, user, showComments = false, isExpanded = false }) {
         <span className="ml-auto text-sm text-neutral-500">{timeAgo(post.id)}</span>
       </div>
       
-      <p className="text-neutral-800 mb-4">{post.content}</p>
+      <p className="text-neutral-800 mb-4">{post.content || post.title}</p>
       
       {!isExpanded && (
-        <div className="relative h-48 -mx-6 mb-4 overflow-hidden">
+        <div className="relative h-48 -mx-6 mb-4 overflow-hidden bg-neutral-100">
           <img
-            src={generatePostImage(post.id, post.content)}
-            alt="Post image"
+            src={getImageSource()}
+            alt="Post content"
             className="object-cover w-full h-full transition-transform duration-700 hover:scale-105"
             loading="lazy"
+            onError={handleImageError}
+            onLoad={handleImageLoad}
           />
+          
+          {/* Fallback image in case primary image fails to load */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center bg-neutral-100">
+              <img
+                src={fallbackImage}
+                alt="Fallback post image"
+                className="object-cover w-full h-full"
+                loading="lazy"
+              />
+            </div>
+          )}
         </div>
       )}
       
@@ -46,7 +89,7 @@ function PostCard({ post, user, showComments = false, isExpanded = false }) {
         
         <button className="flex items-center space-x-1 py-2 px-3 rounded-md hover:text-neutral-700 transition-colors">
           <FiMessageSquare />
-          <span>{post.commentCount || 0}</span>
+          <span>{post.commentCount || post.num_comments || 0}</span>
         </button>
         
         <button className="flex items-center space-x-1 py-2 px-3 rounded-md hover:text-neutral-700 transition-colors">

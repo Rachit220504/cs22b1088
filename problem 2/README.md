@@ -134,3 +134,21 @@ The current implementation uses placeholder URLs. To get real data:
 
 1. Replace the URLs in the `NUMBER_APIS` dictionary in `app.py` with actual endpoints
 2. Restart the backend server
+
+## Testing with Mock Data
+
+This application includes mock data generation for testing when actual APIs are unavailable:
+
+1. In the UI, check the "Use Mock Data" checkbox before clicking "Fetch Numbers"
+2. The backend will generate appropriate mock data based on the selected number type:
+   - Prime numbers: random selection from first 15 prime numbers
+   - Fibonacci numbers: random selection from first 13 Fibonacci numbers  
+   - Even numbers: random even numbers (2, 4, 6, etc.)
+   - Random numbers: random integers between 1 and 100
+
+3. To use mock data directly with the API, add the `use_mock=true` query parameter:
+```
+http://localhost:8000/numbers/p?use_mock=true
+```
+
+Mock data allows you to test the application's functionality without relying on external APIs.
